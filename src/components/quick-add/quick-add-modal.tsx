@@ -32,7 +32,6 @@ const archiveSchema = z.object({
 const meetingSchema = z.object({
   title:        z.string().min(1, 'Nhập tiêu đề'),
   client_name:  z.string().min(1, 'Nhập tên khách hàng'),
-  scheduled_at: z.string().min(1, 'Chọn ngày giờ'),
   duration_min: z.number().optional(),
   mode:         z.enum(['online', 'offline', 'phone']).optional(),
   location:     z.string().optional(),
@@ -456,17 +455,19 @@ function MeetingForm({ inputRef, onClose }: { inputRef: React.RefObject<HTMLInpu
   const [projectId, setProjectId] = useState('')
   const [loading, setLoading] = useState(false)
 
-  // Nếu có ngày từ lịch, dùng ngày đó 9:00; không thì dùng ngày mai 9:00
+  // Format datetime-local value (YYYY-MM-DDTHH:mm) in local time — không dùng toISOString (UTC)
+  const pad = (n: number) => String(n).padStart(2, '0')
   const defaultDt = (() => {
-    const base = quickAddDate ? new Date(quickAddDate + 'T09:00') : (() => {
-      const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(9, 0, 0, 0); return d
-    })()
-    return base.toISOString().slice(0, 16)
+    if (quickAddDate) return `${quickAddDate}T09:00`
+    const d = new Date()
+    d.setDate(d.getDate() + 1)
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T09:00`
   })()
+  const [scheduledAt, setScheduledAt] = useState(defaultDt)
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<MeetingForm>({
     resolver: zodResolver(meetingSchema),
-    defaultValues: { mode: 'offline', duration_min: 60, scheduled_at: defaultDt },
+    defaultValues: { mode: 'offline', duration_min: 60 },
   })
 
   const onSubmit = async (data: MeetingForm) => {
@@ -478,7 +479,7 @@ function MeetingForm({ inputRef, onClose }: { inputRef: React.RefObject<HTMLInpu
         project_id:   projectId || undefined,
         title:        data.title,
         client_name:  data.client_name,
-        scheduled_at: new Date(data.scheduled_at).toISOString(),
+        scheduled_at: new Date(scheduledAt).toISOString(),
         mode,
         location:     data.location || undefined,
         agenda:       data.agenda || undefined,
@@ -514,8 +515,12 @@ function MeetingForm({ inputRef, onClose }: { inputRef: React.RefObject<HTMLInpu
         {/* Ngày giờ */}
         <div className="flex items-center gap-2">
           <span className="text-xs text-neutral-400 w-16 shrink-0">Thời gian</span>
-          <input {...register('scheduled_at')} type="datetime-local" defaultValue={defaultDt}
-            className="flex-1 text-sm text-neutral-700 border border-neutral-200 rounded-lg px-3 py-1.5 outline-none focus:border-neutral-400 transition-colors" />
+          <input
+            type="datetime-local"
+            value={scheduledAt}
+            onChange={(e) => setScheduledAt(e.target.value)}
+            className="flex-1 text-sm text-neutral-700 border border-neutral-200 rounded-lg px-3 py-1.5 outline-none focus:border-neutral-400 transition-colors"
+          />
         </div>
 
         {/* Hình thức */}
