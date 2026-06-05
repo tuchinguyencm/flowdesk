@@ -17,7 +17,12 @@ export const useUIStore = create<UIState>((set) => ({
   quickAddTab: 'task',
   quickAddDate: '',
   openQuickAdd: (tab = 'task', date) =>
-    set({ quickAddOpen: true, quickAddTab: tab, quickAddDate: date ?? '' }),
+    set((s) => ({
+      quickAddOpen: true,
+      quickAddTab: tab,
+      // chỉ ghi đè date khi caller truyền tường minh, không reset khi đổi tab
+      quickAddDate: date !== undefined ? date : s.quickAddDate,
+    })),
   closeQuickAdd: () => set({ quickAddOpen: false, quickAddDate: '' }),
 
   sidebarOpen: true,
