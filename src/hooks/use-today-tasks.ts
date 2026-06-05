@@ -1,6 +1,7 @@
 'use client'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '@/db'
+import { pushUnsyncedData } from '@/lib/sync'
 import { useTaskStore } from '@/store'
 import type { Task, TaskStatus } from '@/types'
 import { v4 as uuid } from 'uuid'
@@ -44,16 +45,18 @@ export async function addTask(input: Omit<Task, 'id' | 'created_at' | '_synced'>
     _synced: false,
   }
   await db.tasks.add(task)
+  pushUnsyncedData(task.user_id).catch(() => {})
   return task
 }
 
-export async function toggleTask(id: string, currentStatus: TaskStatus) {
+export async function toggleTask(id: string, currentStatus: TaskStatus, userId: string) {
   const next = currentStatus === 'done' ? 'todo' : 'done'
   await db.tasks.update(id, {
     status: next,
     completed_at: next === 'done' ? new Date().toISOString() : undefined,
     _synced: false,
   })
+  pushUnsyncedData(userId).catch(() => {})
 }
 
 export async function deleteTask(id: string) {
@@ -72,6 +75,7 @@ export async function postponeTask(task: Task): Promise<Task> {
     postpone_count: newCount,
     _synced: false,
   })
+  pushUnsyncedData(task.user_id).catch(() => {})
 
   return { ...task, scheduled_date: tomorrowStr, postpone_count: newCount }
 }

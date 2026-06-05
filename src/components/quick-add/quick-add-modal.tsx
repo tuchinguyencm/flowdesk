@@ -9,7 +9,7 @@ import { addTask } from '@/hooks/use-today-tasks'
 import { useAuth } from '@/lib/auth-context'
 import { useProjects } from '@/hooks/use-projects'
 import { db } from '@/db'
-import { uploadArchiveFile } from '@/lib/sync'
+import { uploadArchiveFile, pushUnsyncedData } from '@/lib/sync'
 import type { QuickAddTab, ArchiveType, ArchivePurpose, MeetingMode } from '@/types'
 
 // ── Schemas ──────────────────────────────────────────────────────
@@ -303,9 +303,10 @@ function ArchiveForm({ inputRef, onClose }: { inputRef: React.RefObject<HTMLInpu
         storage_url = await uploadArchiveFile(file, user.id, projectId || undefined)
       }
 
+      const userId = user?.id ?? 'local'
       await db.archive_items.add({
         id:          uuid(),
-        user_id:     user?.id ?? 'local',
+        user_id:     userId,
         project_id:  projectId || undefined,
         type,
         title:       data.title,
@@ -318,6 +319,7 @@ function ArchiveForm({ inputRef, onClose }: { inputRef: React.RefObject<HTMLInpu
         created_at:  new Date().toISOString(),
         _synced:     false,
       })
+      pushUnsyncedData(userId).catch(() => {})
       reset()
       setFile(null)
       setPurposes([])
@@ -473,9 +475,10 @@ function MeetingForm({ inputRef, onClose }: { inputRef: React.RefObject<HTMLInpu
   const onSubmit = async (data: MeetingForm) => {
     setLoading(true)
     try {
+      const userId = user?.id ?? 'local'
       await db.meetings.add({
         id:           uuid(),
-        user_id:      user?.id ?? 'local',
+        user_id:      userId,
         project_id:   projectId || undefined,
         title:        data.title,
         client_name:  data.client_name,
@@ -486,6 +489,7 @@ function MeetingForm({ inputRef, onClose }: { inputRef: React.RefObject<HTMLInpu
         created_at:   new Date().toISOString(),
         _synced:      false,
       })
+      pushUnsyncedData(userId).catch(() => {})
       reset()
       onClose()
     } finally {

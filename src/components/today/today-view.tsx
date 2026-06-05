@@ -119,7 +119,7 @@ function TaskRow({ task, onPostpone }: { task: Task; onPostpone: (task: Task) =>
   return (
     <div className={`flex items-start gap-3 px-3 py-2.5 rounded-lg group hover:bg-neutral-50 transition-colors ${isDone ? 'opacity-50' : ''}`}>
       <button
-        onClick={() => toggleTask(task.id, task.status)}
+        onClick={() => toggleTask(task.id, task.status, task.user_id)}
         className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${
           isDone ? 'bg-emerald-500 border-emerald-500' : 'border-neutral-300 hover:border-neutral-500'
         }`}
