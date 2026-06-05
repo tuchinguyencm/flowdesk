@@ -451,12 +451,22 @@ const MODES: { value: MeetingMode; label: string }[] = [
 
 function MeetingForm({ inputRef, onClose }: { inputRef: React.RefObject<HTMLInputElement | null>; onClose: () => void }) {
   const { user } = useAuth()
+  const { quickAddDate } = useUIStore()
   const [mode, setMode] = useState<MeetingMode>('offline')
   const [projectId, setProjectId] = useState('')
   const [loading, setLoading] = useState(false)
+
+  // Nếu có ngày từ lịch, dùng ngày đó 9:00; không thì dùng ngày mai 9:00
+  const defaultDt = (() => {
+    const base = quickAddDate ? new Date(quickAddDate + 'T09:00') : (() => {
+      const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(9, 0, 0, 0); return d
+    })()
+    return base.toISOString().slice(0, 16)
+  })()
+
   const { register, handleSubmit, reset, formState: { errors } } = useForm<MeetingForm>({
     resolver: zodResolver(meetingSchema),
-    defaultValues: { mode: 'offline', duration_min: 60 },
+    defaultValues: { mode: 'offline', duration_min: 60, scheduled_at: defaultDt },
   })
 
   const onSubmit = async (data: MeetingForm) => {
@@ -481,12 +491,6 @@ function MeetingForm({ inputRef, onClose }: { inputRef: React.RefObject<HTMLInpu
       setLoading(false)
     }
   }
-
-  // Gợi ý datetime mặc định = ngày mai 9:00
-  const tomorrow = new Date()
-  tomorrow.setDate(tomorrow.getDate() + 1)
-  tomorrow.setHours(9, 0, 0, 0)
-  const defaultDt = tomorrow.toISOString().slice(0, 16)
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
