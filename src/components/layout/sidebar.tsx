@@ -9,6 +9,7 @@ const NAV = [
   { href: '/today',    label: 'Hôm nay',  icon: '☀' },
   { href: '/projects', label: 'Dự án',    icon: '⬡' },
   { href: '/calendar', label: 'Lịch',     icon: '◫' },
+  { href: '/history',  label: 'Nhật ký',  icon: '≡' },
   { href: '/archive',  label: 'Lưu trữ',  icon: '◧' },
 ]
 

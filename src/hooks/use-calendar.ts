@@ -2,6 +2,37 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '@/db'
 
+export function useTodayMeetings(userId: string, date: string) {
+  return useLiveQuery(
+    () =>
+      db.meetings
+        .where('user_id')
+        .equals(userId)
+        .filter((m) => new Date(m.scheduled_at).toLocaleDateString('sv-SE') === date)
+        .toArray(),
+    [userId, date]
+  )
+}
+
+export function useAllTasks(userId: string) {
+  return useLiveQuery(
+    () =>
+      db.tasks
+        .where('user_id')
+        .equals(userId)
+        .filter((t) => t.status !== 'cancelled')
+        .toArray(),
+    [userId]
+  )
+}
+
+export function useAllMeetings(userId: string) {
+  return useLiveQuery(
+    () => db.meetings.where('user_id').equals(userId).toArray(),
+    [userId]
+  )
+}
+
 export function useMonthTasks(userId: string, year: number, month: number) {
   const start = `${year}-${String(month).padStart(2, '0')}-01`
   const end   = `${year}-${String(month).padStart(2, '0')}-31` // safe upper bound

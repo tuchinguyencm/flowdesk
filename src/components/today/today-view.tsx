@@ -3,11 +3,12 @@ import { useState } from 'react'
 import { format } from 'date-fns'
 import { vi } from 'date-fns/locale'
 import { useTodayTasks, toggleTask, postponeTask } from '@/hooks/use-today-tasks'
+import { useTodayMeetings } from '@/hooks/use-calendar'
 import { useUIStore } from '@/store'
 import { useAuth } from '@/lib/auth-context'
 import { WeeklyInsightPanel } from '@/components/ai/weekly-insight-panel'
 import { PatternAlertModal } from '@/components/ai/pattern-alert-modal'
-import type { Task } from '@/types'
+import type { Task, Meeting } from '@/types'
 
 const TIME_LABEL: Record<string, string> = {
   morning: 'Buổi sáng',
@@ -15,9 +16,16 @@ const TIME_LABEL: Record<string, string> = {
   evening: 'Buổi tối',
 }
 
+const MODE_LABEL: Record<string, string> = {
+  offline: 'Gặp trực tiếp',
+  online:  'Online',
+  phone:   'Điện thoại',
+}
+
 export function TodayView() {
   const { user } = useAuth()
   const { tasks, done, total, selectedDate } = useTodayTasks(user?.id ?? '')
+  const meetings = useTodayMeetings(user?.id ?? '', selectedDate) ?? []
   const openQuickAdd = useUIStore((s) => s.openQuickAdd)
   const [insightOpen, setInsightOpen] = useState(false)
   const [alertTask, setAlertTask] = useState<Task | null>(null)
@@ -29,6 +37,10 @@ export function TodayView() {
     return acc
   }, {})
 
+  const sortedMeetings = [...meetings].sort((a, b) =>
+    a.scheduled_at.localeCompare(b.scheduled_at)
+  )
+
   const progress = total > 0 ? Math.round((done / total) * 100) : 0
   const dateLabel = format(new Date(selectedDate + 'T12:00:00'), "EEEE, d 'tháng' M", { locale: vi })
 
@@ -38,6 +50,8 @@ export function TodayView() {
       setAlertTask(updated)
     }
   }
+
+  const isEmpty = total === 0 && meetings.length === 0
 
   return (
     <div className="max-w-2xl mx-auto px-6 py-6">
@@ -72,10 +86,10 @@ export function TodayView() {
         </div>
       </div>
 
-      {total === 0 ? (
+      {isEmpty ? (
         <div className="text-center py-20">
           <div className="text-4xl mb-4">☀</div>
-          <div className="text-neutral-500 text-sm mb-4">Chưa có task nào hôm nay</div>
+          <div className="text-neutral-500 text-sm mb-4">Chưa có task hay lịch hẹn nào hôm nay</div>
           <button
             onClick={() => openQuickAdd('task')}
             className="px-4 py-2 bg-neutral-900 text-white text-sm rounded-lg hover:opacity-85"
@@ -84,27 +98,51 @@ export function TodayView() {
           </button>
         </div>
       ) : (
-        Object.entries(grouped).map(([slot, slotTasks]) => (
-          <div key={slot} className="mb-8">
-            <div className="flex items-center gap-3 mb-3">
-              <span className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
-                {TIME_LABEL[slot] ?? slot}
-              </span>
-              <div className="flex-1 h-px bg-neutral-100" />
+        <>
+          {/* Tasks grouped by time slot */}
+          {Object.entries(grouped).map(([slot, slotTasks]) => (
+            <div key={slot} className="mb-8">
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
+                  {TIME_LABEL[slot] ?? slot}
+                </span>
+                <div className="flex-1 h-px bg-neutral-100" />
+              </div>
+              <div className="flex flex-col gap-1">
+                {slotTasks.map((task) => (
+                  <TaskRow key={task.id} task={task} onPostpone={handlePostpone} />
+                ))}
+              </div>
+              <button
+                onClick={() => openQuickAdd('task')}
+                className="mt-2 text-xs text-neutral-300 hover:text-neutral-500 px-2 py-1 transition-colors"
+              >
+                + Thêm task {TIME_LABEL[slot]?.toLowerCase() ?? slot}...
+              </button>
             </div>
-            <div className="flex flex-col gap-1">
-              {slotTasks.map((task) => (
-                <TaskRow key={task.id} task={task} onPostpone={handlePostpone} />
-              ))}
+          ))}
+
+          {/* Meetings */}
+          {sortedMeetings.length > 0 && (
+            <div className="mb-8">
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-xs font-medium text-neutral-400 uppercase tracking-wider">Lịch hẹn</span>
+                <div className="flex-1 h-px bg-neutral-100" />
+              </div>
+              <div className="flex flex-col gap-1">
+                {sortedMeetings.map((m) => (
+                  <MeetingRow key={m.id} meeting={m} />
+                ))}
+              </div>
+              <button
+                onClick={() => openQuickAdd('meeting')}
+                className="mt-2 text-xs text-neutral-300 hover:text-neutral-500 px-2 py-1 transition-colors"
+              >
+                + Thêm lịch hẹn...
+              </button>
             </div>
-            <button
-              onClick={() => openQuickAdd('task')}
-              className="mt-2 text-xs text-neutral-300 hover:text-neutral-500 px-2 py-1 transition-colors"
-            >
-              + Thêm task {TIME_LABEL[slot]?.toLowerCase() ?? slot}...
-            </button>
-          </div>
-        ))
+          )}
+        </>
       )}
 
       {insightOpen && <WeeklyInsightPanel onClose={() => setInsightOpen(false)} />}
@@ -168,6 +206,24 @@ function TaskRow({ task, onPostpone }: { task: Task; onPostpone: (task: Task) =>
             <path d="M10 2L12 4L5 11H3V9L10 2Z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </button>
+      </div>
+    </div>
+  )
+}
+
+function MeetingRow({ meeting }: { meeting: Meeting }) {
+  const time = format(new Date(meeting.scheduled_at), 'HH:mm')
+  return (
+    <div className="flex items-start gap-3 px-3 py-2.5 rounded-lg hover:bg-blue-50/50 transition-colors">
+      <div className="mt-0.5 w-4 h-4 rounded border border-blue-200 bg-blue-50 flex items-center justify-center shrink-0 text-[8px] text-blue-500 font-bold">
+        ◫
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="text-sm text-neutral-900">{meeting.title}</div>
+        <div className="text-xs text-neutral-400 mt-0.5">
+          {time} · {meeting.client_name}
+          {meeting.mode && <span className="ml-1.5 text-neutral-300">· {MODE_LABEL[meeting.mode] ?? meeting.mode}</span>}
+        </div>
       </div>
     </div>
   )
