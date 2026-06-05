@@ -4,7 +4,8 @@ import type { QuickAddTab } from '@/types'
 interface UIState {
   quickAddOpen: boolean
   quickAddTab: QuickAddTab
-  openQuickAdd: (tab?: QuickAddTab) => void
+  quickAddDate: string   // YYYY-MM-DD, empty = use today
+  openQuickAdd: (tab?: QuickAddTab, date?: string) => void
   closeQuickAdd: () => void
 
   sidebarOpen: boolean
@@ -14,9 +15,10 @@ interface UIState {
 export const useUIStore = create<UIState>((set) => ({
   quickAddOpen: false,
   quickAddTab: 'task',
-  openQuickAdd: (tab = 'task') =>
-    set({ quickAddOpen: true, quickAddTab: tab }),
-  closeQuickAdd: () => set({ quickAddOpen: false }),
+  quickAddDate: '',
+  openQuickAdd: (tab = 'task', date) =>
+    set({ quickAddOpen: true, quickAddTab: tab, quickAddDate: date ?? '' }),
+  closeQuickAdd: () => set({ quickAddOpen: false, quickAddDate: '' }),
 
   sidebarOpen: true,
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),

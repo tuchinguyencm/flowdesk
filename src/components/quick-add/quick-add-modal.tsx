@@ -160,8 +160,10 @@ function ProjectSelect({ userId, value, onChange }: {
 // ── 1. TASK FORM ─────────────────────────────────────────────────
 function TaskForm({ inputRef, onClose }: { inputRef: React.RefObject<HTMLInputElement | null>; onClose: () => void }) {
   const { user } = useAuth()
+  const { quickAddDate } = useUIStore()
   const [projectId, setProjectId] = useState('')
   const today = new Date().toISOString().split('T')[0]
+  const [scheduledDate, setScheduledDate] = useState(quickAddDate || today)
   const { register, handleSubmit, reset, formState: { errors } } = useForm<TaskForm>({
     resolver: zodResolver(taskSchema),
   })
@@ -175,7 +177,7 @@ function TaskForm({ inputRef, onClose }: { inputRef: React.RefObject<HTMLInputEl
       priority:       data.priority,
       note:           data.note,
       project_id:     projectId || undefined,
-      scheduled_date: today,
+      scheduled_date: scheduledDate,
     })
     reset()
     onClose()
@@ -193,6 +195,16 @@ function TaskForm({ inputRef, onClose }: { inputRef: React.RefObject<HTMLInputEl
 
       <div className="px-4 py-3 flex flex-col gap-3">
         <ProjectSelect userId={user?.id ?? ''} value={projectId} onChange={setProjectId} />
+
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-neutral-400 w-16 shrink-0">Ngày</span>
+          <input
+            type="date"
+            value={scheduledDate}
+            onChange={(e) => setScheduledDate(e.target.value)}
+            className="text-sm text-neutral-700 border border-neutral-200 rounded-lg px-2.5 py-1 outline-none focus:border-neutral-400 transition-colors"
+          />
+        </div>
 
         <div className="flex items-center gap-2">
           <span className="text-xs text-neutral-400 w-16 shrink-0">Khung giờ</span>

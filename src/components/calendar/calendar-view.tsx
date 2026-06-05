@@ -1,6 +1,5 @@
 'use client'
 import { useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import {
   addMonths,
   eachDayOfInterval,
@@ -13,7 +12,8 @@ import {
 } from 'date-fns'
 import { vi } from 'date-fns/locale'
 import { useAuth } from '@/lib/auth-context'
-import { useTaskStore } from '@/store'
+import { useUIStore, useTaskStore } from '@/store'
+
 import { useProjects } from '@/hooks/use-projects'
 import { useMonthTasks, useMonthMeetings } from '@/hooks/use-calendar'
 import type { Task, Meeting } from '@/types'
@@ -51,7 +51,7 @@ function buildCalendarGrid(viewDate: Date) {
 // ── CalendarView ──────────────────────────────────────────────────
 export function CalendarView() {
   const { user }        = useAuth()
-  const router          = useRouter()
+  const openQuickAdd    = useUIStore((s) => s.openQuickAdd)
   const setSelectedDate = useTaskStore((s) => s.setSelectedDate)
   const selectedDate    = useTaskStore((s) => s.selectedDate)
 
@@ -97,7 +97,7 @@ export function CalendarView() {
   function goToDay(date: Date) {
     const ds = format(date, 'yyyy-MM-dd')
     setSelectedDate(ds)
-    router.push('/today')
+    openQuickAdd('task', ds)
   }
 
   const monthLabel = format(viewDate, "MMMM 'năm' yyyy", { locale: vi })
