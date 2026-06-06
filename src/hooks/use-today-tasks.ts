@@ -63,6 +63,11 @@ export async function deleteTask(id: string) {
   await db.tasks.delete(id)
 }
 
+export async function updateTask(id: string, updates: Partial<Task>, userId: string) {
+  await db.tasks.update(id, { ...updates, _synced: false })
+  pushUnsyncedData(userId).catch(() => {})
+}
+
 export async function postponeTask(task: Task): Promise<Task> {
   const tomorrow = new Date()
   tomorrow.setDate(tomorrow.getDate() + 1)

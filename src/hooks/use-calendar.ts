@@ -1,6 +1,8 @@
 'use client'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '@/db'
+import { pushUnsyncedData } from '@/lib/sync'
+import type { Meeting } from '@/types'
 
 export function useTodayMeetings(userId: string, date: string) {
   return useLiveQuery(
@@ -46,6 +48,15 @@ export function useMonthTasks(userId: string, year: number, month: number) {
         .toArray(),
     [userId, year, month]
   )
+}
+
+export async function deleteMeeting(id: string) {
+  await db.meetings.delete(id)
+}
+
+export async function updateMeeting(id: string, updates: Partial<Meeting>, userId: string) {
+  await db.meetings.update(id, { ...updates, _synced: false })
+  pushUnsyncedData(userId).catch(() => {})
 }
 
 export function useMonthMeetings(userId: string, year: number, month: number) {
