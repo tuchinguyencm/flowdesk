@@ -56,6 +56,7 @@ create table public.tasks (
   scheduled_date date,                    -- ngày thực hiện
   scheduled_time time,                    -- giờ cụ thể (tuỳ chọn)
   completed_at   timestamptz,
+  postpone_count int not null default 0, -- số lần hoãn
   created_at     timestamptz not null default now(),
   updated_at     timestamptz not null default now()
 );

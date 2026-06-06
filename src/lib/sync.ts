@@ -5,7 +5,8 @@ import type { Task, ArchiveItem, Meeting } from '@/types'
 const supabase = createClient()
 
 export async function syncTaskNow(task: Task) {
-  const { _synced, ...clean } = task
+  // postpone_count is a local field — strip until migration adds the column to Supabase
+  const { _synced, postpone_count, ...clean } = task
   const { error } = await supabase.from('tasks').upsert(clean)
   if (!error) await db.tasks.update(task.id, { _synced: true })
 }
@@ -25,7 +26,7 @@ export async function pushUnsyncedData(userId: string) {
   ])
 
   if (tasks.length) {
-    const clean = tasks.map(({ _synced, ...t }) => t)
+    const clean = tasks.map(({ _synced, postpone_count, ...t }) => t)
     const { error } = await supabase.from('tasks').upsert(clean)
     if (!error) await db.tasks.bulkPut(tasks.map(t => ({ ...t, _synced: true })))
   }
