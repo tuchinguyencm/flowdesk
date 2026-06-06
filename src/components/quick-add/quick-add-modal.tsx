@@ -163,6 +163,7 @@ function TaskForm({ inputRef, onClose }: { inputRef: React.RefObject<HTMLInputEl
   const [projectId, setProjectId] = useState('')
   const today = new Date().toISOString().split('T')[0]
   const [scheduledDate, setScheduledDate] = useState(quickAddDate || today)
+  const [scheduledTime, setScheduledTime] = useState('')
   const { register, handleSubmit, reset, formState: { errors } } = useForm<TaskForm>({
     resolver: zodResolver(taskSchema),
   })
@@ -177,6 +178,7 @@ function TaskForm({ inputRef, onClose }: { inputRef: React.RefObject<HTMLInputEl
       note:           data.note,
       project_id:     projectId || undefined,
       scheduled_date: scheduledDate,
+      scheduled_time: scheduledTime || undefined,
     })
     reset()
     onClose()
@@ -201,6 +203,12 @@ function TaskForm({ inputRef, onClose }: { inputRef: React.RefObject<HTMLInputEl
             type="date"
             value={scheduledDate}
             onChange={(e) => setScheduledDate(e.target.value)}
+            className="text-sm text-neutral-700 border border-neutral-200 rounded-lg px-2.5 py-1 outline-none focus:border-neutral-400 transition-colors"
+          />
+          <input
+            type="time"
+            value={scheduledTime}
+            onChange={(e) => setScheduledTime(e.target.value)}
             className="text-sm text-neutral-700 border border-neutral-200 rounded-lg px-2.5 py-1 outline-none focus:border-neutral-400 transition-colors"
           />
         </div>

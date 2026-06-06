@@ -373,6 +373,8 @@ function EditTaskModal({
   const [priority, setPriority] = useState<string>(task.priority ?? '')
   const [note, setNote] = useState(task.note ?? '')
   const [projectId, setProjectId] = useState(task.project_id ?? '')
+  const [scheduledDate, setScheduledDate] = useState(task.scheduled_date ?? new Date().toISOString().split('T')[0])
+  const [scheduledTime, setScheduledTime] = useState(task.scheduled_time ?? '')
   const [saving, setSaving] = useState(false)
 
   const save = async () => {
@@ -384,6 +386,8 @@ function EditTaskModal({
       priority: (priority || undefined) as TaskPriority | undefined,
       note: note.trim() || undefined,
       project_id: projectId || undefined,
+      scheduled_date: scheduledDate,
+      scheduled_time: scheduledTime || undefined,
     }, userId)
     setSaving(false)
     onClose()
@@ -400,6 +404,22 @@ function EditTaskModal({
           className="w-full text-sm font-medium text-neutral-900 placeholder-neutral-300 border border-neutral-200 rounded-lg px-3 py-2 outline-none focus:border-neutral-400 transition-colors"
           placeholder="Tên task..."
         />
+
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-neutral-400 w-20 shrink-0">Ngày & giờ</span>
+          <input
+            type="date"
+            value={scheduledDate}
+            onChange={(e) => setScheduledDate(e.target.value)}
+            className="text-sm text-neutral-700 border border-neutral-200 rounded-lg px-2.5 py-1.5 outline-none focus:border-neutral-400 transition-colors"
+          />
+          <input
+            type="time"
+            value={scheduledTime}
+            onChange={(e) => setScheduledTime(e.target.value)}
+            className="text-sm text-neutral-700 border border-neutral-200 rounded-lg px-2.5 py-1.5 outline-none focus:border-neutral-400 transition-colors"
+          />
+        </div>
 
         <div className="flex items-center gap-2">
           <span className="text-xs text-neutral-400 w-20 shrink-0">Buổi</span>
