@@ -4,11 +4,24 @@ import type { Task, ArchiveItem, Meeting } from '@/types'
 
 const supabase = createClient()
 
+export async function syncTaskNow(task: Task) {
+  const { _synced, ...clean } = task
+  const { error } = await supabase.from('tasks').upsert(clean)
+  if (!error) await db.tasks.update(task.id, { _synced: true })
+}
+
+export async function syncMeetingNow(meeting: Meeting) {
+  const { _synced, ...clean } = meeting
+  const { error } = await supabase.from('meetings').upsert(clean)
+  if (!error) await db.meetings.update(meeting.id, { _synced: true })
+}
+
 export async function pushUnsyncedData(userId: string) {
+  // Use filter (not index) because IndexedDB doesn't support boolean keys
   const [tasks, archiveItems, meetings] = await Promise.all([
-    db.tasks.where('_synced').equals(0 as any).and(t => t.user_id === userId).toArray(),
-    db.archive_items.where('_synced').equals(0 as any).and(a => a.user_id === userId).toArray(),
-    db.meetings.where('_synced').equals(0 as any).and(m => m.user_id === userId).toArray(),
+    db.tasks.where('user_id').equals(userId).filter(t => !t._synced).toArray(),
+    db.archive_items.where('user_id').equals(userId).filter(a => !a._synced).toArray(),
+    db.meetings.where('user_id').equals(userId).filter(m => !m._synced).toArray(),
   ])
 
   if (tasks.length) {

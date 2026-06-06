@@ -9,7 +9,7 @@ import { addTask } from '@/hooks/use-today-tasks'
 import { useAuth } from '@/lib/auth-context'
 import { useProjects } from '@/hooks/use-projects'
 import { db } from '@/db'
-import { uploadArchiveFile, pushUnsyncedData } from '@/lib/sync'
+import { uploadArchiveFile, syncMeetingNow, pushUnsyncedData } from '@/lib/sync'
 import type { QuickAddTab, ArchiveType, ArchivePurpose, MeetingMode } from '@/types'
 
 // ── Schemas ──────────────────────────────────────────────────────
@@ -484,7 +484,7 @@ function MeetingForm({ inputRef, onClose }: { inputRef: React.RefObject<HTMLInpu
     setLoading(true)
     try {
       const userId = user?.id ?? 'local'
-      await db.meetings.add({
+      const meeting = {
         id:           uuid(),
         user_id:      userId,
         project_id:   projectId || undefined,
@@ -495,9 +495,10 @@ function MeetingForm({ inputRef, onClose }: { inputRef: React.RefObject<HTMLInpu
         location:     data.location || undefined,
         agenda:       data.agenda || undefined,
         created_at:   new Date().toISOString(),
-        _synced:      false,
-      })
-      pushUnsyncedData(userId).catch(() => {})
+        _synced:      false as const,
+      }
+      await db.meetings.add(meeting)
+      syncMeetingNow(meeting).catch(() => {})
       reset()
       onClose()
     } finally {

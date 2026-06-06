@@ -1,7 +1,7 @@
 'use client'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '@/db'
-import { pushUnsyncedData } from '@/lib/sync'
+import { syncTaskNow } from '@/lib/sync'
 import { useTaskStore } from '@/store'
 import type { Task, TaskStatus } from '@/types'
 import { v4 as uuid } from 'uuid'
@@ -45,18 +45,19 @@ export async function addTask(input: Omit<Task, 'id' | 'created_at' | '_synced'>
     _synced: false,
   }
   await db.tasks.add(task)
-  pushUnsyncedData(task.user_id).catch(() => {})
+  syncTaskNow(task).catch(() => {})
   return task
 }
 
 export async function toggleTask(id: string, currentStatus: TaskStatus, userId: string) {
-  const next = currentStatus === 'done' ? 'todo' : 'done'
+  const next: TaskStatus = currentStatus === 'done' ? 'todo' : 'done'
   await db.tasks.update(id, {
     status: next,
     completed_at: next === 'done' ? new Date().toISOString() : undefined,
     _synced: false,
   })
-  pushUnsyncedData(userId).catch(() => {})
+  const task = await db.tasks.get(id)
+  if (task) syncTaskNow(task).catch(() => {})
 }
 
 export async function deleteTask(id: string) {
@@ -65,7 +66,8 @@ export async function deleteTask(id: string) {
 
 export async function updateTask(id: string, updates: Partial<Task>, userId: string) {
   await db.tasks.update(id, { ...updates, _synced: false })
-  pushUnsyncedData(userId).catch(() => {})
+  const task = await db.tasks.get(id)
+  if (task) syncTaskNow(task).catch(() => {})
 }
 
 export async function postponeTask(task: Task): Promise<Task> {
@@ -74,13 +76,14 @@ export async function postponeTask(task: Task): Promise<Task> {
   const tomorrowStr = tomorrow.toISOString().split('T')[0]
 
   const newCount = (task.postpone_count ?? 0) + 1
+  const updated = { ...task, scheduled_date: tomorrowStr, postpone_count: newCount, _synced: false }
 
   await db.tasks.update(task.id, {
     scheduled_date: tomorrowStr,
     postpone_count: newCount,
     _synced: false,
   })
-  pushUnsyncedData(task.user_id).catch(() => {})
+  syncTaskNow(updated).catch(() => {})
 
-  return { ...task, scheduled_date: tomorrowStr, postpone_count: newCount }
+  return updated
 }
