@@ -14,9 +14,11 @@ const NAV = [
 ]
 
 export function Sidebar() {
-  const pathname     = usePathname()
-  const router       = useRouter()
-  const openQuickAdd = useUIStore((s) => s.openQuickAdd)
+  const pathname       = usePathname()
+  const router         = useRouter()
+  const openQuickAdd   = useUIStore((s) => s.openQuickAdd)
+  const sidebarOpen    = useUIStore((s) => s.sidebarOpen)
+  const toggleSidebar  = useUIStore((s) => s.toggleSidebar)
   const { user, signOut } = useAuth()
   const { data: projects = [] } = useProjects(user?.id ?? '')
 
@@ -26,7 +28,12 @@ export function Sidebar() {
 
   return (
     <aside
-      className="w-60 shrink-0 flex flex-col h-full overflow-y-auto overflow-x-hidden"
+      className={[
+        'w-60 shrink-0 flex flex-col h-full overflow-y-auto overflow-x-hidden',
+        'fixed inset-y-0 left-0 z-50 transition-transform duration-300 ease-in-out',
+        'md:relative md:inset-auto md:z-auto md:translate-x-0',
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full',
+      ].join(' ')}
       style={{ background: 'var(--sidebar)' }}
     >
       {/* ── Logo ── */}
@@ -40,12 +47,22 @@ export function Sidebar() {
         >
           ✦
         </div>
-        <div>
+        <div className="flex-1 min-w-0">
           <div className="text-white font-bold text-sm leading-tight">FlowDesk</div>
           <div className="text-xs leading-tight" style={{ color: '#94a3b8' }}>
             {user?.email?.split('@')[0] ?? 'Workspace'}
           </div>
         </div>
+        <button
+          onClick={toggleSidebar}
+          className="md:hidden p-1 rounded transition-colors text-base leading-none shrink-0"
+          style={{ color: '#475569' }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = '#94a3b8' }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = '#475569' }}
+          aria-label="Close menu"
+        >
+          ✕
+        </button>
       </div>
 
       {/* ── Quick add ── */}
